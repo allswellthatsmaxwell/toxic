@@ -1,0 +1,9 @@
+[package]
+name = "toxic"
+version = "0.1.0"
+authors = ["Maxwell Peterson <allswellthatsmaxwell9@gmail.com>"]
+
+[dependencies]
+csv = "1.0.0-beta.5"
+serde = "1"
+serde_derive = "1"

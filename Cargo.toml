@@ -7,3 +7,5 @@ authors = ["Maxwell Peterson <allswellthatsmaxwell9@gmail.com>"]
 csv = "1.0.0-beta.5"
 serde = "1"
 serde_derive = "1"
+regex = "0.2"
+lazy_static = "1.0"

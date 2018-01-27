@@ -15,6 +15,7 @@ use regex::Captures;
 use getopts::Options;
 use getopts::Matches;
 use std::collections::HashMap;
+use std::collections::BTreeSet;
 
 fn construct_opts(args: Vec<String>) -> Matches {
     let mut opts = Options::new();
@@ -46,29 +47,22 @@ struct FlatRecord {
     identity_hate: i8
 }
 
-const RESPONSES: &'static [&'static str] = &["toxic",
-                                             "severe_toxic",
-                                             "obscene",
-                                             "threat",
-                                             "insult",
-                                             "identity_hate"];
-
 #[derive(Debug)]
 struct Record<'a> {
     id: String,
     comment_text: String,
-    responses: HashMap<&'a str, bool>
+    responses: BTreeSet<&'a str>
 }
 
 // Collect response columns into a hashmap<variables, response>
 fn unflatten_record<'a>(flat_record: FlatRecord) -> Record<'a> {
-    let mut responses = HashMap::new();
-    responses.insert("toxic",        flat_record.toxic == 1);
-    responses.insert("severe_toxic", flat_record.severe_toxic == 1);
-    responses.insert("obscene",      flat_record.obscene == 1);
-    responses.insert("threat",       flat_record.threat == 1);
-    responses.insert("insult",       flat_record.insult == 1);
-    responses.insert("identity_hate", flat_record.identity_hate == 1);
+    let mut responses = BTreeSet::new();
+    if flat_record.toxic         == 1 {responses.insert("toxic");}
+    if flat_record.severe_toxic  == 1 {responses.insert("severe_toxic");}
+    if flat_record.obscene       == 1 {responses.insert("obscene");}
+    if flat_record.threat        == 1 {responses.insert("threat");}
+    if flat_record.insult        == 1 {responses.insert("insult");}
+    if flat_record.identity_hate == 1 {responses.insert("identity_hate");}
     Record {id: flat_record.id,
             comment_text: flat_record.comment_text,
             responses: responses}
@@ -101,14 +95,10 @@ fn sanitize_text(text: &str) -> Cow<str> {
     })
 }
 
-fn count_response_vars(records: Vec<Record>) -> HashMap<&str, u32> {
+fn count_response_vars(records: Vec<Record>) -> HashMap<BTreeSet<&str>, u32> {
     let mut counts = HashMap::new();
     for record in records {
-        for &response in RESPONSES {
-            *counts.entry(response).or_insert(0) +=
-                if *record.responses.get(response).unwrap() {1} else {0};
-        }
-        
+        *counts.entry(record.responses).or_insert(0) += 1;
     }
     counts
 }
@@ -143,7 +133,7 @@ fn main() {
         "count_responses" => {
             let counts = count_response_vars(train);
             for (response, count) in &counts {
-                println!("{}: {}", response, count)
+                println!("{:?}: {}", response, count)
             }
         },
         _ => println!("Unknown action: {}", action)

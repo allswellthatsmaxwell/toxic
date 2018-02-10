@@ -1,6 +1,0 @@
-[package]
-name = "toxic"
-version = "0.1.0"
-authors = ["Maxwell Peterson <allswellthatsmaxwell9@gmail.com>"]
-
-[dependencies]

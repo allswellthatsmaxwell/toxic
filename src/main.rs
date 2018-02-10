@@ -39,12 +39,12 @@ fn match_arg(arg_short: &str, matches: &Matches) -> String {
 struct FlatRecord {
     id: String,
     comment_text: String,
-    toxic: i8,
-    severe_toxic: i8,
-    obscene: i8,
-    threat: i8,
-    insult: i8,
-    identity_hate: i8
+    toxic: u8,
+    severe_toxic: u8,
+    obscene: u8,
+    threat: u8,
+    insult: u8,
+    identity_hate: u8
 }
 
 #[derive(Debug)]
@@ -80,6 +80,9 @@ fn read_csv(file_path: &str) -> Result<Vec<Record>, Box<Error>> {
     Ok(records)
 }
 
+// replace all instances of whitespace (one or more whitespace characters)
+// with a single space;
+// remove all punctuation
 fn sanitize_text(text: &str) -> Cow<str> {
     lazy_static! { 
        static ref RE: Regex = Regex::new(r"(\s+)|(\p{P}+)").unwrap();
@@ -95,10 +98,48 @@ fn sanitize_text(text: &str) -> Cow<str> {
     })
 }
 
+// return a map mapping sets of positive response variables
+// to a count of how many times each occurred.
 fn count_response_vars(records: Vec<Record>) -> HashMap<BTreeSet<&str>, u32> {
     let mut counts = HashMap::new();
     for record in records {
         *counts.entry(record.responses).or_insert(0) += 1;
+    }
+    counts
+}
+
+type Setset<'a> = BTreeSet<BTreeSet<&'a str>>;
+
+// maybe just use vectors instead hah?
+fn power_set(set: BTreeSet<&str>) -> Setset {
+    fn collect_subsets<'a>(set: BTreeSet<&'a str>, mut sets: Setset<'a>) -> Setset<'a> {
+        sets.insert(set.clone());
+        for el in set {
+            let mut singleton = BTreeSet::new();
+            singleton.insert(el);
+            sets.insert(singleton);
+            let mut next_set = set.clone();
+            next_set.remove(&el);
+            collect_subsets(next_set, sets);
+        }
+        sets
+    }
+    let mut sets = Setset::new();
+    collect_subsets(set, sets)
+}
+
+// get conditional probabilities on all sets of co-occuring positive responses.
+fn get_response_cond_proba(records: Vec<Record>) ->
+    HashMap<&str, HashMap<BTreeSet<&str>, u32>>
+{
+    let mut counts = HashMap::new();
+    for record in records {
+        let pset = power_set(record.responses);
+        for response in record.responses {
+            for subset in pset {
+                *counts.entry(record.responses).or_insert(0) += 1;
+            }
+        }
     }
     counts
 }
